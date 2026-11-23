@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 140 800 860" width="800" height="860" role="img" aria-label="Portrait placeholder">
+  <defs>
+    <linearGradient id="shirt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#23262f"/><stop offset="1" stop-color="#0f1117"/></linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8dbe6"/><stop offset="1" stop-color="#bfc3d1"/></linearGradient>
+  </defs>
+  <path d="M112 1000c0-190 44-330 150-384 52-26 96-40 138-40s86 14 138 40c106 54 150 194 150 384z" fill="url(#shirt)"/>
+  <path d="M334 560h132v70l-66 78-66-78z" fill="#b3b7c6"/>
+  <path d="M320 596l80 112-58 60-70-128zM480 596l-80 112 58 60 70-128z" fill="#2c303b"/>
+  <path d="M400 708v292" stroke="#3a3f4c" stroke-width="3"/>
+  <g fill="#454a58"><circle cx="400" cy="770" r="6"/><circle cx="400" cy="850" r="6"/><circle cx="400" cy="930" r="6"/></g>
+  <rect x="470" y="800" width="92" height="74" rx="6" fill="none" stroke="#343844" stroke-width="3"/>
+  <ellipse cx="400" cy="372" rx="132" ry="164" fill="url(#skin)"/>
+  <path d="M262 356c-10-120 54-196 142-196s150 70 136 190c-12-62-44-98-80-110-60 24-150 26-178 22-10 22-18 56-20 94z" fill="#1c1f27"/>
+</svg>

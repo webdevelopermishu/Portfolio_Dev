@@ -1,0 +1,345 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CLOSED
+}
+
+enum StatGroup {
+  HERO
+  ABOUT
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         Role       @default(EDITOR)
+  // Incremented on password change so existing sessions are invalidated.
+  tokenVersion Int        @default(0)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  leadNotes    LeadNote[]
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  url       String
+  key       String   @unique
+  provider  String   @default("local")
+  filename  String
+  mime      String
+  size      Int
+  width     Int?
+  height    Int?
+  alt       String   @default("")
+  createdAt DateTime @default(now())
+
+  settingsLogo         SiteSettings[]  @relation("SettingsLogo")
+  settingsFavicon      SiteSettings[]  @relation("SettingsFavicon")
+  settingsProfile      SiteSettings[]  @relation("SettingsProfile")
+  settingsCv           SiteSettings[]  @relation("SettingsCv")
+  seoOgImages          SEOSettings[]
+  projectFeatured      Project[]       @relation("ProjectFeatured")
+  projectOg            Project[]       @relation("ProjectOg")
+  projectImages        ProjectImage[]
+  clientLogos          Client[]
+  testimonialAvatars   Testimonial[]   @relation("TestimonialAvatar")
+  testimonialLogos     Testimonial[]   @relation("TestimonialLogo")
+
+  @@index([createdAt])
+}
+
+/// Singleton row (id = 1) holding global configuration.
+model SiteSettings {
+  id                Int      @id @default(1)
+  siteName          String
+  logoText          String
+  developerName     String
+  professionalTitle String
+  email             String   @default("")
+  phone             String   @default("")
+  whatsapp          String   @default("")
+  location          String   @default("")
+  footerText        String   @default("")
+  footerCredit      String   @default("")
+  cvLabel           String   @default("Download CV")
+  navCtaLabel       String   @default("Book A Call")
+  navCtaHref        String   @default("#contact")
+  // Theme
+  colorBackground   String   @default("#e3e5f0")
+  colorPanel        String   @default("#ffffff")
+  colorSoft         String   @default("#f3f4f8")
+  colorInk          String   @default("#0f1524")
+  colorMuted        String   @default("#5b6172")
+  headingFont       String   @default("bodoni")
+  bodyFont          String   @default("inter")
+  // Email
+  notifyEmail       String   @default("")
+  emailFromName     String   @default("")
+  autoReplyEnabled  Boolean  @default(true)
+  autoReplySubject  String   @default("Thanks for reaching out")
+  autoReplyBody     String   @default("")
+  // Feature toggles
+  smoothScroll      Boolean  @default(true)
+  customCursor      Boolean  @default(true)
+  analyticsEnabled  Boolean  @default(true)
+
+  logoId            String?
+  logo              Media?   @relation("SettingsLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  faviconId         String?
+  favicon           Media?   @relation("SettingsFavicon", fields: [faviconId], references: [id], onDelete: SetNull)
+  profileImageId    String?
+  profileImage      Media?   @relation("SettingsProfile", fields: [profileImageId], references: [id], onDelete: SetNull)
+  cvId              String?
+  cv                Media?   @relation("SettingsCv", fields: [cvId], references: [id], onDelete: SetNull)
+
+  updatedAt         DateTime @updatedAt
+}
+
+model Page {
+  id        String        @id @default(cuid())
+  slug      String        @unique
+  title     String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  sections  PageSection[]
+  seo       SEOSettings?
+}
+
+model PageSection {
+  id        String   @id @default(cuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  key       String
+  // Published content shown publicly.
+  content   Json
+  // Unpublished edits; null when there is nothing pending.
+  draft     Json?
+  visible   Boolean  @default(true)
+  order     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([pageId, key])
+  @@index([pageId, order])
+}
+
+model SEOSettings {
+  id               String   @id @default(cuid())
+  pageId           String   @unique
+  page             Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  title            String
+  titleTemplate    String   @default("%s")
+  description      String   @default("")
+  keywords         String   @default("")
+  canonicalUrl     String   @default("")
+  ogTitle          String   @default("")
+  ogDescription    String   @default("")
+  ogImageId        String?
+  ogImage          Media?   @relation(fields: [ogImageId], references: [id], onDelete: SetNull)
+  twitterCard      String   @default("summary_large_image")
+  twitterHandle    String   @default("")
+  robotsIndex      Boolean  @default(true)
+  robotsFollow     Boolean  @default(true)
+  schemaType       String   @default("Person")
+  includeInSitemap Boolean  @default(true)
+  updatedAt        DateTime @updatedAt
+}
+
+model NavItem {
+  id      String  @id @default(cuid())
+  label   String
+  href    String
+  order   Int     @default(0)
+  visible Boolean @default(true)
+
+  @@index([order])
+}
+
+model SocialLink {
+  id           String  @id @default(cuid())
+  platform     String
+  label        String
+  url          String
+  showInFooter Boolean @default(true)
+  order        Int     @default(0)
+  visible      Boolean @default(true)
+
+  @@index([order])
+}
+
+model Skill {
+  id      String  @id @default(cuid())
+  label   String
+  order   Int     @default(0)
+  visible Boolean @default(true)
+
+  @@index([order])
+}
+
+model Statistic {
+  id      String    @id @default(cuid())
+  group   StatGroup
+  value   String
+  label   String
+  order   Int       @default(0)
+  visible Boolean   @default(true)
+
+  @@index([group, order])
+}
+
+model Project {
+  id               String         @id @default(cuid())
+  title            String
+  slug             String         @unique
+  shortDescription String         @default("")
+  description      String         @default("")
+  category         String         @default("")
+  technologies     String[]       @default([])
+  clientName       String         @default("")
+  projectUrl       String         @default("")
+  githubUrl        String         @default("")
+  completedAt      DateTime?
+  projectStatus    String         @default("Completed")
+  featured         Boolean        @default(false)
+  order            Int            @default(0)
+  status           PublishStatus  @default(DRAFT)
+  // When set in the future with status PUBLISHED, the project is scheduled.
+  publishAt        DateTime?
+  seoTitle         String         @default("")
+  seoDescription   String         @default("")
+  robotsIndex      Boolean        @default(true)
+  includeInSitemap Boolean        @default(true)
+
+  featuredImageId  String?
+  featuredImage    Media?         @relation("ProjectFeatured", fields: [featuredImageId], references: [id], onDelete: SetNull)
+  ogImageId        String?
+  ogImage          Media?         @relation("ProjectOg", fields: [ogImageId], references: [id], onDelete: SetNull)
+  images           ProjectImage[]
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([status, order])
+  @@index([featured, status])
+}
+
+model ProjectImage {
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  order     Int     @default(0)
+
+  @@unique([projectId, mediaId])
+  @@index([projectId, order])
+}
+
+model Client {
+  id      String  @id @default(cuid())
+  name    String
+  url     String  @default("")
+  logoId  String?
+  logo    Media?  @relation(fields: [logoId], references: [id], onDelete: SetNull)
+  order   Int     @default(0)
+  visible Boolean @default(true)
+
+  @@index([visible, order])
+}
+
+model Testimonial {
+  id            String        @id @default(cuid())
+  name          String
+  designation   String        @default("")
+  company       String        @default("")
+  text          String
+  rating        Int           @default(5)
+  featured      Boolean       @default(false)
+  order         Int           @default(0)
+  status        PublishStatus @default(DRAFT)
+  avatarId      String?
+  avatar        Media?        @relation("TestimonialAvatar", fields: [avatarId], references: [id], onDelete: SetNull)
+  companyLogoId String?
+  companyLogo   Media?        @relation("TestimonialLogo", fields: [companyLogoId], references: [id], onDelete: SetNull)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status, order])
+}
+
+model ContactLead {
+  id          String     @id @default(cuid())
+  name        String
+  email       String
+  phone       String     @default("")
+  budget      String     @default("")
+  projectType String     @default("")
+  message     String
+  status      LeadStatus @default(NEW)
+  ipHash      String     @default("")
+  userAgent   String     @default("")
+  ownerEmailSent  Boolean @default(false)
+  senderEmailSent Boolean @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  notes       LeadNote[]
+
+  @@index([status, createdAt])
+  @@index([ipHash, createdAt])
+  @@index([email])
+}
+
+model LeadNote {
+  id        String      @id @default(cuid())
+  leadId    String
+  lead      ContactLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?       @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body      String
+  createdAt DateTime    @default(now())
+
+  @@index([leadId, createdAt])
+}
+
+model Redirect {
+  id          String   @id @default(cuid())
+  source      String   @unique
+  destination String
+  permanent   Boolean  @default(true)
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  type      String   @default("page_view")
+  path      String
+  referrer  String   @default("")
+  visitor   String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([path])
+}
